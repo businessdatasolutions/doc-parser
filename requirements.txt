@@ -7,7 +7,7 @@ python-multipart==0.0.6  # For file uploads
 elasticsearch==8.11.0
 
 # PDF Parsing
-landingai-ade==0.1.1
+landingai-ade==0.17.1
 
 # LLM Integration
 anthropic==0.7.8

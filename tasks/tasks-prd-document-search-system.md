@@ -90,29 +90,27 @@
     - Configure test paths and options
     - Set up test markers (unit, integration, e2e)
 
-- [ ] **2.0 Elasticsearch Setup & Index Configuration**
-  - [ ] 2.1 Install Elasticsearch 8.11+ on development machine
-    - Download and extract Elasticsearch
-    - Configure single-node cluster in `elasticsearch.yml`
-    - Set JVM heap size (50% of RAM, max 32GB)
-    - Enable security (`xpack.security.enabled: true`)
-  - [ ] 2.2 Start Elasticsearch and create initial user
-    - Start Elasticsearch service
-    - Save elastic user password
-    - Test connection with curl
-  - [ ] 2.3 Create `src/db/elasticsearch.py` client module
+- [x] **2.0 Elasticsearch Setup & Index Configuration**
+  - [x] 2.1 Create Docker Compose configuration for services
+    - Create `docker-compose.yml` with Elasticsearch 8.11.0 and PostgreSQL 14
+    - Configure Elasticsearch (single-node, security disabled for dev)
+    - Configure PostgreSQL with dev credentials
+    - Add volume mounts for data persistence
+    - Create `scripts/start_services.sh` helper script
+  - [x] 2.2 Start services with Docker Compose and verify
+    - Run `docker-compose up -d`
+    - Verify Elasticsearch is accessible on http://localhost:9200
+    - Verify PostgreSQL is accessible on localhost:5432
+    - Test Elasticsearch cluster health
+  - [x] 2.3 Create `src/db/elasticsearch.py` client module
     - Initialize Elasticsearch client with connection pooling
     - Implement health check function
     - Add retry logic and error handling
-  - [ ] 2.4 Implement `documents` index schema creation
+  - [x] 2.4 Implement `documents` index schema creation
     - Define index settings (shards, replicas, analyzers)
     - Define mappings (document_id, filename, content, summary, etc.)
     - Implement index creation function with idempotency
-  - [ ] 2.5 Create Elasticsearch API key for application
-    - Generate API key with limited permissions
-    - Document role configuration (read/write to documents index)
-    - Update `.env` with API key
-  - [ ] 2.6 Write tests for Elasticsearch connection
+  - [x] 2.5 Write tests for Elasticsearch connection
     - Test connection health check
     - Test index creation
     - Test document indexing and retrieval

@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Elasticsearch 8.11 - Search Engine
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: doc-search-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false  # Disabled for development
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"  # 1GB heap size for development
+      - cluster.name=document-search
+      - node.name=node-1
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - doc-search-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # PostgreSQL 14 - Metadata Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: doc-search-postgres
+    environment:
+      - POSTGRES_USER=docsearch
+      - POSTGRES_PASSWORD=dev_password_change_in_production
+      - POSTGRES_DB=docsearch
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - doc-search-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docsearch"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  elasticsearch_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  doc-search-network:
+    driver: bridge
