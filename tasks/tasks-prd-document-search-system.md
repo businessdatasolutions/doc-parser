@@ -115,39 +115,39 @@
     - Test index creation
     - Test document indexing and retrieval
 
-- [ ] **3.0 Core Document Processing Pipeline**
-  - [ ] 3.1 Create `src/models/document.py` Pydantic schemas
+- [x] **3.0 Core Document Processing Pipeline**
+  - [x] 3.1 Create `src/models/document.py` Pydantic schemas
     - DocumentUploadRequest (category, machine_model, metadata)
     - DocumentUploadResponse (document_id, status)
     - DocumentMetadata (filename, file_size, upload_date)
     - ProcessingStatus enum (uploaded, parsing, summarizing, indexing, ready, failed)
-  - [ ] 3.2 Implement `src/services/pdf_parser.py` LandingAI integration
+  - [x] 3.2 Implement `src/services/pdf_parser.py` LandingAI integration
     - Initialize LandingAI client
     - Implement `parse_pdf(file_path: Path) -> str` function
     - Parse PDF to markdown using `dpt-2-latest` model
     - Handle parsing errors with retry logic
     - Add logging for parsing metrics
-  - [ ] 3.3 Implement markdown chunking by page
+  - [x] 3.3 Implement markdown chunking by page
     - Parse markdown to extract page boundaries
     - Split content into page-level chunks
     - Preserve structure (headers, tables, lists)
     - Extract metadata (page numbers, sections)
-  - [ ] 3.4 Create `src/services/summarizer.py` Claude integration
+  - [x] 3.4 Create `src/services/summarizer.py` Claude integration
     - Initialize Anthropic client
     - Implement `summarize_text(content: str) -> str` function
     - Use Claude Haiku 3 model (`claude-3-haiku-20240307`)
     - Optimize prompt for technical document summaries
     - Handle rate limiting and errors
-  - [ ] 3.5 Implement `src/services/document_processor.py` pipeline
+  - [x] 3.5 Implement `src/services/document_processor.py` pipeline
     - Orchestrate: save PDF → parse → chunk → summarize → index
     - Update processing status at each stage
     - Implement error handling and rollback
     - Add progress tracking
-  - [ ] 3.6 Create `src/db/postgres.py` for metadata storage
+  - [x] 3.6 Create `src/db/postgres.py` for metadata storage
     - Define documents table schema (id, filename, status, timestamps)
     - Implement CRUD operations
     - Add connection pooling
-  - [ ] 3.7 Write unit tests for processing pipeline
+  - [x] 3.7 Write unit tests for processing pipeline
     - Test PDF parsing with sample document
     - Test chunking logic
     - Test summarization with mock API
