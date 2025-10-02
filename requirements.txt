@@ -10,7 +10,7 @@ elasticsearch==8.11.0
 landingai-ade==0.17.1
 
 # LLM Integration
-anthropic==0.7.8
+anthropic==0.39.0
 
 # Database
 psycopg2-binary==2.9.9

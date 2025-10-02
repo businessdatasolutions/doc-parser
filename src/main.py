@@ -97,8 +97,10 @@ async def root():
     }
 
 
-# API v1 router placeholder
-# API routes will be added in later tasks
+# API v1 routers
+from src.api.search import router as search_router
+
+app.include_router(search_router)
 
 
 if __name__ == "__main__":
