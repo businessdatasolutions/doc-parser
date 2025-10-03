@@ -96,6 +96,58 @@ Follow the task list in [tasks/tasks-prd-document-search-system.md](tasks/tasks-
 4. **Commit after parent task** - Use conventional commit format
 5. **Wait for approval** - Ask user before starting next sub-task
 
+### Issue Management
+
+#### Creating New Issues
+When creating a new issue, follow these guidelines:
+
+1. **Numbering**: Issues are numbered sequentially starting from 001 (use 3 digits: 001, 002, ..., 099, 100)
+2. **Filename Format**: `{number}-{status}-{short-title}.md`
+   - Example: `001-open-user-scoring-learning.md`
+   - Example: `042-in-progress-fix-pdf-parsing.md`
+   - Example: `015-completed-add-fuzzy-search.md`
+
+3. **Status Values**:
+   - `open` - Issue identified, not yet started
+   - `in-progress` - Currently being worked on
+   - `completed` - Issue resolved and verified
+   - `wontfix` - Issue acknowledged but will not be fixed
+
+4. **Required Sections**:
+   ```markdown
+   # Issue #{number}: {Title}
+
+   **Status**: {open|in-progress|completed|wontfix}
+   **Priority**: {Low|Medium|High|Critical}
+   **Created**: YYYY-MM-DD
+   **Assigned**: {Name or Unassigned}
+
+   ## Description
+   {Clear description of the issue or feature request}
+
+   ## Problem
+   {What problem does this address?}
+
+   ## Proposed Solution
+   {How to solve it}
+
+   ## Acceptance Criteria
+   - [ ] Criterion 1
+   - [ ] Criterion 2
+
+   ## Dependencies
+   {Related issues or external dependencies}
+   ```
+
+5. **Updating Status**: When status changes, rename the file to reflect new status
+   - Example: `001-open-user-scoring.md` → `001-in-progress-user-scoring.md`
+
+6. **Location**: All issues are stored in `issues/` directory
+
+#### Current Open Issues
+- [#001](issues/001-open-user-scoring-learning.md): User scoring and learning system (Priority: Medium)
+- [#002](issues/002-open-highlight-full-content.md): Highlight search terms in full content (Priority: High)
+
 ### Running the Application
 ```bash
 # Start Elasticsearch (Docker Compose)
