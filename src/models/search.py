@@ -74,6 +74,10 @@ class SearchRequest(BaseModel):
         default=True,
         description="Include highlighted snippets in results"
     )
+    include_content: bool = Field(
+        default=True,
+        description="Include full page content with preserved structure (tables, formatting)"
+    )
 
     @validator("query")
     def validate_query(cls, v):
@@ -96,6 +100,10 @@ class SearchResult(BaseModel):
     snippet: Optional[str] = Field(
         default=None,
         description="Highlighted text snippet showing matched content"
+    )
+    content: Optional[str] = Field(
+        default=None,
+        description="Full page content with preserved structure (tables, formatting)"
     )
     summary: Optional[str] = Field(
         default=None,

@@ -153,57 +153,57 @@
     - Test summarization with mock API
     - Test full pipeline with integration test
 
-- [ ] **4.0 Search API Implementation**
-  - [ ] 4.1 Create `src/models/search.py` Pydantic schemas
+- [x] **4.0 Search API Implementation**
+  - [x] 4.1 Create `src/models/search.py` Pydantic schemas
     - SearchRequest (query, filters, pagination)
     - SearchResponse (results, total, took)
     - SearchResult (document_id, filename, page, snippet, score)
     - SearchFilters (category, machine_model, date_range)
-  - [ ] 4.2 Implement `src/services/search_service.py` Elasticsearch queries
+  - [x] 4.2 Implement `src/services/search_service.py` Elasticsearch queries
     - Build multi-match query with BM25
     - Implement fuzzy matching (`fuzziness: "AUTO"`)
     - Add field boosting (content^2, summary^1.5, part_numbers^3)
     - Implement highlighting for matched terms
-  - [ ] 4.3 Add pagination support
+  - [x] 4.3 Add pagination support
     - Implement `from` and `size` parameters
     - Default page size: 10, max: 100
     - Return total count and page metadata
-  - [ ] 4.4 Implement search filters
+  - [x] 4.4 Implement search filters
     - Filter by category (maintenance, operations, spare_parts)
     - Filter by machine_model (keyword match)
     - Filter by date_range (upload_date)
     - Combine filters with bool query
-  - [ ] 4.5 Create `src/api/search.py` search endpoint
+  - [x] 4.5 Create `src/api/search.py` search endpoint
     - POST `/api/v1/search` endpoint
     - Validate request with Pydantic
     - Call search service
     - Return formatted results with snippets
     - Add request/response logging
-  - [ ] 4.6 Add search result snippet generation
+  - [x] 4.6 Add search result snippet generation
     - Extract highlighted text around matches
     - Limit snippet length (200 chars)
     - Add ellipsis (...) for truncated text
-  - [ ] 4.7 Implement aggregations for faceted search
+  - [x] 4.7 Implement aggregations for faceted search
     - Aggregate by category (count per category)
     - Aggregate by machine_model
     - Return facets in search response
-  - [ ] 4.8 Write unit tests for search service
+  - [x] 4.8 Write unit tests for search service
     - Test query building with various parameters
     - Test fuzzy matching with typos
     - Test filtering logic
     - Test pagination
-  - [ ] 4.9 Write integration tests for search API
+  - [x] 4.9 Write integration tests for search API
     - Index sample documents
     - Test search with various queries
     - Test filters and pagination
     - Test error handling (invalid queries)
 
-- [ ] **5.0 Document Management API**
-  - [ ] 5.1 Create `src/utils/auth.py` API key authentication
+- [x] **5.0 Document Management API**
+  - [x] 5.1 Create `src/utils/auth.py` API key authentication
     - Implement API key middleware
     - Validate Authorization header
     - Return 401 for invalid/missing keys
-  - [ ] 5.2 Implement POST `/api/v1/documents/upload` endpoint
+  - [x] 5.2 Implement POST `/api/v1/documents/upload` endpoint
     - Accept multipart/form-data (PDF file + metadata)
     - Validate file type (PDF only)
     - Validate file size (max 100MB)
@@ -211,29 +211,29 @@
     - Create database record with status "uploaded"
     - Trigger background processing task
     - Return 202 Accepted with document_id
-  - [ ] 5.3 Implement GET `/api/v1/documents/{document_id}` endpoint
+  - [x] 5.3 Implement GET `/api/v1/documents/{document_id}` endpoint
     - Retrieve document metadata from database
     - Return status, filename, upload_date, etc.
     - Return 404 if document not found
-  - [ ] 5.4 Implement GET `/api/v1/documents` list endpoint
+  - [x] 5.4 Implement GET `/api/v1/documents` list endpoint
     - Support pagination (page, page_size)
     - Support filtering by status
     - Support sorting by upload_date
     - Return list of documents with metadata
-  - [ ] 5.5 Implement DELETE `/api/v1/documents/{document_id}` endpoint
+  - [x] 5.5 Implement DELETE `/api/v1/documents/{document_id}` endpoint
     - Delete document from database
     - Delete PDF file from storage
     - Delete all pages from Elasticsearch index
     - Return 204 No Content on success
-  - [ ] 5.6 Implement GET `/api/v1/documents/{document_id}/download` endpoint
+  - [x] 5.6 Implement GET `/api/v1/documents/{document_id}/download` endpoint
     - Stream PDF file to client
     - Set Content-Disposition header
     - Handle missing files gracefully
-  - [ ] 5.7 Add background task processing with FastAPI BackgroundTasks
+  - [x] 5.7 Add background task processing with FastAPI BackgroundTasks
     - Process documents asynchronously after upload
     - Update status in database during processing
     - Handle failures and update status to "failed"
-  - [ ] 5.8 Write integration tests for document API
+  - [x] 5.8 Write integration tests for document API
     - Test upload with valid PDF
     - Test upload with invalid file (non-PDF, oversized)
     - Test retrieve, list, delete operations

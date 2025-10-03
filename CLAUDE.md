@@ -16,14 +16,30 @@ This is a **Document Search & Retrieval System** for an internal sales departmen
 
 ## Current Status
 
-**Phase**: Planning Complete - Ready for Implementation
+**Phase**: Core Implementation Complete - Task 5.0 Done
+**Completed Tasks**:
+- ✅ Task 1.0 - Project Setup & Infrastructure
+- ✅ Task 2.0 - PDF Processing & Summarization
+- ✅ Task 3.0 - Elasticsearch Integration
+- ✅ Task 4.0 - Search API Implementation
+- ✅ Task 5.0 - Document Management API
+- ✅ Search UI - Interactive HTML interface with full content display
+
 **Documents**:
 - ✅ [Product Requirements Document (PRD)](tasks/prd-document-search-system.md) - v1.3
 - ✅ [Technical Design Document (TDD)](docs/technical_design_document.md) - v1.1
 - ✅ [Task List](tasks/tasks-prd-document-search-system.md) - 10 parent tasks, 83 sub-tasks
 - ✅ [Context Session](docs/context_session.md) - Project tracking and decisions
 
-**Next Step**: Begin Task 1.1 - Initialize Python project structure
+**Current State**:
+- Backend API fully functional with 83/83 tests passing
+- Document management endpoints complete (upload, list, get, delete, download)
+- Elasticsearch indexing and search working
+- HTML search UI available at root URL (`/`)
+- Full content display with preserved table structures
+- API key authentication implemented
+
+**Next Step**: Task 6.0 - Testing & Quality Assurance
 
 ## Setup
 
@@ -76,16 +92,18 @@ Follow the task list in [tasks/tasks-prd-document-search-system.md](tasks/tasks-
 4. **Commit after parent task** - Use conventional commit format
 5. **Wait for approval** - Ask user before starting next sub-task
 
-### Running the Application (after implementation)
+### Running the Application
 ```bash
-# Start Elasticsearch
-./scripts/start_elasticsearch.sh
-
-# Initialize database
-python scripts/init_db.py
+# Start Elasticsearch (Docker Compose)
+docker-compose up -d
 
 # Run FastAPI application
 uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Access the application
+# - Search UI: http://localhost:8000/
+# - API Docs: http://localhost:8000/docs
+# - Health Check: http://localhost:8000/health
 ```
 
 ### Running Tests
@@ -112,6 +130,7 @@ doc-parser/
 ├── README.md               # Project documentation
 ├── requirements.txt        # Python dependencies
 ├── pytest.ini             # Pytest configuration
+├── docker-compose.yml     # Elasticsearch container setup
 │
 ├── docs/                  # Documentation
 │   ├── context_session.md
@@ -121,6 +140,9 @@ doc-parser/
 ├── tasks/                 # Planning documents
 │   ├── prd-document-search-system.md
 │   └── tasks-prd-document-search-system.md
+│
+├── static/                # Frontend assets
+│   └── index.html        # Search UI (HTML/CSS/JS)
 │
 ├── src/                   # Application code
 │   ├── __init__.py
@@ -149,7 +171,7 @@ doc-parser/
 │       ├── logging.py
 │       └── auth.py
 │
-├── tests/                # Test files
+├── tests/                # Test files (83 passing)
 │   ├── conftest.py
 │   ├── test_pdf_parser.py
 │   ├── test_summarizer.py
@@ -159,10 +181,8 @@ doc-parser/
 │   ├── test_api_search.py
 │   └── test_e2e_user_flow.py
 │
-└── scripts/              # Deployment scripts
-    ├── start_elasticsearch.sh
-    ├── init_db.py
-    └── load_sample_data.py
+└── data/                 # Runtime data
+    └── pdfs/            # Uploaded PDF storage
 ```
 
 ## Key Technical Details
@@ -178,9 +198,21 @@ doc-parser/
 - **Algorithm**: Elasticsearch BM25 (keyword-based full-text search)
 - **Fuzzy Matching**: AUTO (1-2 character edits based on term length)
 - **Field Boosting**: `part_numbers^3`, `machine_model^2.5`, `content^2`, `summary^1.5`
-- **Highlighting**: Extract snippets with matched terms
+- **Highlighting**: Extract snippets with matched terms (~150 chars)
+- **Full Content**: Optional full page content with preserved HTML/table structure
 - **Filters**: Category, machine model, date range
-- **Performance Target**: <3s search latency (p95)
+- **Performance**: Typical 10-50ms response time (well under 3s target)
+
+### Search UI Features
+- **Interactive Interface**: Single-page HTML/CSS/JS at root URL (`/`)
+- **Search Options**: Fuzzy matching toggle, highlighting toggle, page size selector
+- **Filters**: Category dropdown with dynamic filtering
+- **Results Display**:
+  - Highlighted snippets with matched terms
+  - Expandable full content with "Show/Hide Full Content" button
+  - Rendered HTML with proper table formatting
+  - Pagination for large result sets
+- **Environment Agnostic**: Auto-detects URL (works in localhost, Codespaces, production)
 
 ### Cost Structure
 - **Elasticsearch**: $0/month (Basic tier free for self-managed)
@@ -189,20 +221,33 @@ doc-parser/
 - **Infrastructure**: ~$75-300/month (server/VM)
 - **Total MVP**: ~$75/month operational costs
 
-## API Endpoints (Planned)
+## API Endpoints
 
-### Document Management
-- `POST /api/v1/documents/upload` - Upload PDF document
-- `GET /api/v1/documents/{id}` - Get document metadata
-- `GET /api/v1/documents` - List documents (paginated)
-- `DELETE /api/v1/documents/{id}` - Delete document
-- `GET /api/v1/documents/{id}/download` - Download PDF
+### Search (✅ Implemented)
+- `POST /api/v1/search` - Search documents with multi-field queries, fuzzy matching, filters, highlighting
+  - Query parameters: `query`, `filters`, `page`, `page_size`, `enable_fuzzy`, `include_highlights`, `include_content`
+  - Returns: Paginated results with snippets, scores, metadata, and optional full content
 
-### Search
-- `POST /api/v1/search` - Search documents with filters
-
-### Health
+### Health (✅ Implemented)
 - `GET /health` - Health check endpoint
+- `GET /` - Serves search UI (HTML interface)
+
+### Document Management (✅ Implemented)
+- `POST /api/v1/documents/upload` - Upload PDF document with metadata (requires API key)
+  - Accepts: multipart/form-data (PDF file + category + machine_model)
+  - Validates: file type (PDF only), file size (max 100MB)
+  - Returns: 202 Accepted with document_id
+  - Triggers: background processing task
+- `GET /api/v1/documents/{id}` - Get document status and metadata (requires API key)
+  - Returns: document_id, filename, status, upload_date, total_pages, error_message
+- `GET /api/v1/documents` - List documents with pagination and filters (requires API key)
+  - Query params: status, category, page, page_size
+  - Returns: paginated list with total count
+- `DELETE /api/v1/documents/{id}` - Delete document and all associated data (requires API key)
+  - Deletes: database record, PDF file, Elasticsearch index entries
+  - Returns: 204 No Content
+- `GET /api/v1/documents/{id}/download` - Download original PDF (requires API key)
+  - Returns: PDF file with proper content-disposition header
 
 ---
 

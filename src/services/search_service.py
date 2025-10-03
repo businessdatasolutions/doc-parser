@@ -59,7 +59,8 @@ class SearchService:
                 query=request.query,
                 page=request.page,
                 page_size=request.page_size,
-                include_highlights=request.include_highlights
+                include_highlights=request.include_highlights,
+                include_content=request.include_content
             )
 
             logger.info(
@@ -196,7 +197,8 @@ class SearchService:
         query: str,
         page: int,
         page_size: int,
-        include_highlights: bool
+        include_highlights: bool,
+        include_content: bool = True
     ) -> SearchResponse:
         """
         Parse Elasticsearch response into SearchResponse model.
@@ -207,6 +209,7 @@ class SearchService:
             page: Current page number
             page_size: Results per page
             include_highlights: Whether to include highlighted snippets
+            include_content: Whether to include full page content
 
         Returns:
             SearchResponse: Parsed search response
@@ -236,6 +239,7 @@ class SearchService:
                 category=source["category"],
                 score=score,
                 snippet=snippet,
+                content=source.get("content") if include_content else None,
                 summary=source.get("summary"),
                 machine_model=source.get("machine_model"),
                 part_numbers=source.get("part_numbers", []),
