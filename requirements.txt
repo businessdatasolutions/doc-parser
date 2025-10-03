@@ -8,6 +8,7 @@ elasticsearch==8.11.0
 
 # PDF Parsing
 landingai-ade==0.17.1
+pypdf==4.0.1  # For PDF page counting and limiting
 
 # LLM Integration
 anthropic==0.39.0

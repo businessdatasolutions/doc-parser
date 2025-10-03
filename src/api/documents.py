@@ -34,6 +34,7 @@ from src.services.document_processor import DocumentProcessor
 from src.config import settings
 from src.utils.auth import verify_api_key
 from src.utils.logging import get_logger
+from src.utils.pdf_utils import limit_pdf_to_max_pages, cleanup_limited_pdf
 
 logger = get_logger(__name__)
 
@@ -141,14 +142,32 @@ async def process_document_task(
     """
     processor = DocumentProcessor()
     pg_client = get_postgres_client()
+    limited_pdf_path = None
 
     try:
         # Update status to parsing
         pg_client.update_document_status(document_id, ProcessingStatus.PARSING)
 
-        # Process document
+        # Check PDF page count and create limited version if needed
+        # This handles LandingAI's 50-page limitation
+        pdf_to_process, original_page_count, was_truncated = limit_pdf_to_max_pages(file_path)
+
+        if was_truncated:
+            limited_pdf_path = pdf_to_process
+            logger.warning(
+                f"Document {document_id} truncated from {original_page_count} to 50 pages "
+                f"due to LandingAI limitation"
+            )
+            # Add truncation info to error message field for user awareness
+            pg_client.update_document_status(
+                document_id=document_id,
+                status=ProcessingStatus.PARSING,
+                error_message=f"Note: PDF truncated from {original_page_count} to 50 pages for processing"
+            )
+
+        # Process document (with limited version if truncated)
         result = processor.process_document(
-            file_path=file_path,
+            file_path=pdf_to_process,
             document_id=document_id,
             category=category,
             machine_model=machine_model,
@@ -156,11 +175,16 @@ async def process_document_task(
         )
 
         # Update status to ready
+        final_error_msg = None
+        if was_truncated:
+            final_error_msg = f"Note: Original PDF had {original_page_count} pages, processed first 50 pages only"
+
         pg_client.update_document_status(
             document_id=document_id,
             status=ProcessingStatus.READY,
             total_pages=result.get("total_pages"),
             indexed_at=datetime.utcnow(),
+            error_message=final_error_msg
         )
 
         logger.info(f"Document {document_id} processed successfully")
@@ -174,6 +198,11 @@ async def process_document_task(
             status=ProcessingStatus.FAILED,
             error_message=str(e),
         )
+
+    finally:
+        # Clean up limited PDF if it was created
+        if limited_pdf_path:
+            cleanup_limited_pdf(limited_pdf_path)
 
 
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=202)
