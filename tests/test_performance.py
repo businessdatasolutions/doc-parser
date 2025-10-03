@@ -31,23 +31,30 @@ class TestSearchPerformance:
     @patch("src.api.search.get_search_service")
     def test_search_latency_under_3_seconds(self, mock_search_service):
         """Test that search responds in <3 seconds (p95)."""
+        # Import SearchResponse to create proper mock
+        from src.models.search import SearchResponse, SearchResult
+
         # Mock search service with realistic delay
         mock_service = Mock()
-        mock_service.search.return_value = {
-            "took": 50,
-            "total": 10,
-            "results": [
-                {
-                    "document_id": f"doc-{i}",
-                    "filename": f"test-{i}.pdf",
-                    "page": 1,
-                    "score": 0.9,
-                    "snippet": "test content",
-                    "summary": "test summary"
-                }
+        mock_service.search.return_value = SearchResponse(
+            query="test query",
+            took=50,
+            total=10,
+            page=1,
+            page_size=10,
+            results=[
+                SearchResult(
+                    document_id=f"doc-{i}",
+                    filename=f"test-{i}.pdf",
+                    page=1,
+                    category="maintenance",
+                    score=0.9,
+                    snippet="test content",
+                    summary="test summary"
+                )
                 for i in range(10)
             ]
-        }
+        )
         mock_search_service.return_value = mock_service
 
         # Perform 100 searches to get p95
@@ -87,12 +94,17 @@ class TestSearchPerformance:
     @patch("src.api.search.get_search_service")
     def test_search_response_time_avg(self, mock_search_service):
         """Test average search response time."""
+        from src.models.search import SearchResponse
+
         mock_service = Mock()
-        mock_service.search.return_value = {
-            "took": 50,
-            "total": 5,
-            "results": []
-        }
+        mock_service.search.return_value = SearchResponse(
+            query="test",
+            took=50,
+            total=5,
+            page=1,
+            page_size=10,
+            results=[]
+        )
         mock_search_service.return_value = mock_service
 
         # Perform 50 searches
@@ -324,23 +336,29 @@ class TestSearchScalability:
     @patch("src.api.search.get_search_service")
     def test_search_with_large_result_set(self, mock_search_service):
         """Test search performance with 1000 results."""
+        from src.models.search import SearchResponse, SearchResult
+
         # Mock large result set
         mock_service = Mock()
-        mock_service.search.return_value = {
-            "took": 100,
-            "total": 1000,
-            "results": [
-                {
-                    "document_id": f"doc-{i}",
-                    "filename": f"test-{i}.pdf",
-                    "page": 1,
-                    "score": 0.8,
-                    "snippet": "test" * 50,  # ~200 chars
-                    "summary": "summary" * 30  # ~210 chars
-                }
+        mock_service.search.return_value = SearchResponse(
+            query="test",
+            took=100,
+            total=1000,
+            page=1,
+            page_size=100,
+            results=[
+                SearchResult(
+                    document_id=f"doc-{i}",
+                    filename=f"test-{i}.pdf",
+                    page=1,
+                    category="maintenance",
+                    score=0.8,
+                    snippet="test" * 50,  # ~200 chars
+                    summary="summary" * 30  # ~210 chars
+                )
                 for i in range(100)  # First page of 100 results
             ]
-        }
+        )
         mock_search_service.return_value = mock_service
 
         start_time = time.time()

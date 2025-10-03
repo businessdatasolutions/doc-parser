@@ -354,7 +354,7 @@ doc-parser/
 | p95 Search Latency | <3s | <100ms | ✅ |
 | Document Download | <5s | <1s | ✅ |
 
-**Test Coverage**: 90 tests, 77% overall coverage
+**Test Coverage**: 114 tests, all passing (including large PDF processing tests)
 
 ## Known Limitations
 
