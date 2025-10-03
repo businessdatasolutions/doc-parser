@@ -170,7 +170,8 @@ class TestGetDocumentStatus:
         # Mock document
         mock_doc = Mock()
         mock_doc.id = "test-id"
-        mock_doc.filename = "test.pdf"
+        mock_doc.filename = "uuid-filename.pdf"
+        mock_doc.original_filename = "test.pdf"
         mock_doc.processing_status = ProcessingStatus.READY
         mock_doc.upload_date = datetime.utcnow()
         mock_doc.indexed_at = datetime.utcnow()
@@ -216,7 +217,8 @@ class TestListDocuments:
         # Mock documents
         mock_doc = Mock()
         mock_doc.id = "doc-1"
-        mock_doc.filename = "test.pdf"
+        mock_doc.filename = "uuid-filename.pdf"
+        mock_doc.original_filename = "test.pdf"
         mock_doc.file_size = 1024
         mock_doc.file_path = "/path/to/test.pdf"
         mock_doc.category = DocumentCategory.MAINTENANCE
@@ -365,7 +367,8 @@ class TestDownloadDocument:
         # Mock document
         mock_doc = Mock()
         mock_doc.id = "test-id"
-        mock_doc.filename = "test.pdf"
+        mock_doc.filename = "uuid-filename.pdf"
+        mock_doc.original_filename = "test.pdf"
         mock_doc.file_path = str(test_file)
 
         mock_postgres_client.get_document.return_value = mock_doc

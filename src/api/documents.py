@@ -145,6 +145,13 @@ async def process_document_task(
     limited_pdf_path = None
 
     try:
+        # Get document record to fetch original filename
+        doc = pg_client.get_document(document_id)
+        if not doc:
+            raise ValueError(f"Document {document_id} not found in database")
+
+        original_filename = doc.original_filename
+
         # Update status to parsing
         pg_client.update_document_status(document_id, ProcessingStatus.PARSING)
 
@@ -169,6 +176,7 @@ async def process_document_task(
         result = processor.process_document(
             file_path=pdf_to_process,
             document_id=document_id,
+            original_filename=original_filename,
             category=category,
             machine_model=machine_model,
             generate_summaries=True,
@@ -254,7 +262,8 @@ async def upload_document(
     try:
         pg_client.create_document(
             document_id=document_id,
-            filename=file.filename,
+            filename=file_path.name,  # Storage filename (UUID.pdf)
+            original_filename=file.filename,  # Original uploaded filename
             file_path=str(file_path),
             file_size=file_size,
             category=doc_category,
@@ -318,7 +327,7 @@ async def get_document_status(
 
     return DocumentStatusResponse(
         document_id=doc.id,
-        filename=doc.filename,
+        filename=doc.original_filename,  # Use original filename for display
         status=doc.processing_status,
         upload_date=doc.upload_date,
         indexed_at=doc.indexed_at,
@@ -400,7 +409,7 @@ async def list_documents(
         document_list.append(
             DocumentMetadata(
                 document_id=doc.id,
-                filename=doc.filename,
+                filename=doc.original_filename,  # Use original filename for display
                 file_size=doc.file_size,
                 file_path=doc.file_path,
                 category=doc.category,

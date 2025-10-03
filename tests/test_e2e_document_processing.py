@@ -69,6 +69,7 @@ class TestE2EDocumentProcessing:
             db_client.create_document(
                 document_id=document_id,
                 filename=pdf_file.name,
+                original_filename=pdf_file.name,
                 file_size=pdf_file.stat().st_size,
                 file_path=str(pdf_file),
                 category=DocumentCategory.MAINTENANCE
@@ -80,6 +81,7 @@ class TestE2EDocumentProcessing:
             result = processor.process_document(
                 file_path=pdf_file,
                 document_id=document_id,
+                original_filename=pdf_file.name,
                 category=DocumentCategory.MAINTENANCE,
                 generate_summaries=False  # Skip to avoid API costs
             )
@@ -184,6 +186,7 @@ class TestE2EDocumentProcessing:
             result = processor.process_document(
                 file_path=pdf_file,
                 document_id=document_id,
+                original_filename=pdf_file.name,
                 category=DocumentCategory.MAINTENANCE,
                 generate_summaries=False
             )

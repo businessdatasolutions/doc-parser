@@ -221,7 +221,8 @@ class TestPostgreSQLClient:
 
         doc = Document(
             id="test-123",
-            filename="test.pdf",
+            filename="uuid-filename.pdf",
+            original_filename="test.pdf",
             file_path="/path/to/test.pdf",
             file_size=1024,
             category=DocumentCategory.MAINTENANCE,

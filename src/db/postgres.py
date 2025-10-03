@@ -34,7 +34,8 @@ class Document(Base):
     __tablename__ = "documents"
 
     id = Column(String(36), primary_key=True)
-    filename = Column(String(255), nullable=False)
+    filename = Column(String(255), nullable=False)  # Storage filename (UUID-based)
+    original_filename = Column(String(255), nullable=False)  # Original uploaded filename
     file_path = Column(String(512), nullable=False)
     file_size = Column(BigInteger, nullable=False)  # Bytes
     category = Column(SQLEnum(DocumentCategory), nullable=False)
@@ -51,7 +52,8 @@ class Document(Base):
         """Convert model to dictionary."""
         return {
             "document_id": self.id,
-            "filename": self.filename,
+            "filename": self.original_filename,  # Return original filename for display
+            "storage_filename": self.filename,  # Internal storage filename
             "file_path": self.file_path,
             "file_size": self.file_size,
             "category": self.category.value if self.category else None,
@@ -119,6 +121,7 @@ class PostgreSQLClient:
         self,
         document_id: str,
         filename: str,
+        original_filename: str,
         file_path: str,
         file_size: int,
         category: DocumentCategory,
@@ -129,7 +132,8 @@ class PostgreSQLClient:
 
         Args:
             document_id: Unique document identifier
-            filename: Original filename
+            filename: Storage filename (UUID-based)
+            original_filename: Original uploaded filename
             file_path: Path to stored PDF
             file_size: File size in bytes
             category: Document category
@@ -143,6 +147,7 @@ class PostgreSQLClient:
             doc = Document(
                 id=document_id,
                 filename=filename,
+                original_filename=original_filename,
                 file_path=file_path,
                 file_size=file_size,
                 category=category,

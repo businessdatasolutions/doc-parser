@@ -32,6 +32,7 @@ class DocumentProcessor:
         self,
         file_path: Path,
         document_id: str,
+        original_filename: str,
         category: DocumentCategory,
         machine_model: Optional[str] = None,
         generate_summaries: bool = True
@@ -48,6 +49,7 @@ class DocumentProcessor:
         Args:
             file_path: Path to PDF file
             document_id: Unique document identifier
+            original_filename: Original uploaded filename (for display)
             category: Document category
             machine_model: Optional machine model
             generate_summaries: Whether to generate summaries (default: True)
@@ -62,7 +64,7 @@ class DocumentProcessor:
 
         result = {
             "document_id": document_id,
-            "filename": file_path.name,
+            "filename": original_filename,
             "status": ProcessingStatus.UPLOADED,
             "total_pages": 0,
             "pages_indexed": 0,
@@ -127,7 +129,7 @@ class DocumentProcessor:
 
                 doc = {
                     "document_id": document_id,
-                    "filename": file_path.name,
+                    "filename": original_filename,  # Use original filename for display
                     "page": chunk["page"],
                     "content": chunk["content"],
                     "summary": summaries[i] if summaries[i] else None,
