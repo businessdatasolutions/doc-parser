@@ -127,21 +127,34 @@ class SearchService:
 
         # Add highlighting if requested
         if request.include_highlights:
+            highlight_fields = {
+                "summary": {
+                    "fragment_size": 150,
+                    "number_of_fragments": 1,
+                    "pre_tags": ["<mark>"],
+                    "post_tags": ["</mark>"]
+                }
+            }
+
+            # Add content highlighting
+            if request.include_content:
+                # Full-field highlighting for full content view
+                highlight_fields["content"] = {
+                    "number_of_fragments": 0,  # Return entire field highlighted
+                    "pre_tags": ["<mark>"],
+                    "post_tags": ["</mark>"]
+                }
+            else:
+                # Fragment highlighting for snippet view
+                highlight_fields["content"] = {
+                    "fragment_size": 150,
+                    "number_of_fragments": 1,
+                    "pre_tags": ["<mark>"],
+                    "post_tags": ["</mark>"]
+                }
+
             es_query["highlight"] = {
-                "fields": {
-                    "content": {
-                        "fragment_size": 150,
-                        "number_of_fragments": 1,
-                        "pre_tags": ["<mark>"],
-                        "post_tags": ["</mark>"]
-                    },
-                    "summary": {
-                        "fragment_size": 150,
-                        "number_of_fragments": 1,
-                        "pre_tags": ["<mark>"],
-                        "post_tags": ["</mark>"]
-                    }
-                },
+                "fields": highlight_fields,
                 "order": "score"
             }
 
@@ -222,13 +235,21 @@ class SearchService:
             source = hit["_source"]
             score = hit["_score"]
 
-            # Extract highlight snippet
+            # Extract highlight snippet and full highlighted content
             snippet = None
+            highlighted_content = None
+
             if include_highlights and "highlight" in hit:
-                # Prefer summary highlight, fall back to content
+                # Extract highlighted content (full-field when include_content=True)
+                if "content" in hit["highlight"] and include_content:
+                    # Full-field highlighting - use for highlighted_content
+                    highlighted_content = hit["highlight"]["content"][0]
+
+                # Extract snippet for preview (prefer summary, fall back to content fragment)
                 if "summary" in hit["highlight"]:
                     snippet = hit["highlight"]["summary"][0]
-                elif "content" in hit["highlight"]:
+                elif "content" in hit["highlight"] and not include_content:
+                    # Content fragment (when include_content=False) - use for snippet
                     snippet = hit["highlight"]["content"][0]
 
             # Create search result
@@ -240,6 +261,7 @@ class SearchService:
                 score=score,
                 snippet=snippet,
                 content=source.get("content") if include_content else None,
+                highlighted_content=highlighted_content,
                 summary=source.get("summary"),
                 machine_model=source.get("machine_model"),
                 part_numbers=source.get("part_numbers", []),

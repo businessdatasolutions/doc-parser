@@ -279,6 +279,13 @@
             background-color: #f9f9f9;
         }
 
+        .result-full-content mark {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
         .toggle-content-btn {
             display: inline-block;
             margin-top: 10px;
@@ -624,10 +631,11 @@
 
             // Now safely inject the HTML content into each content div
             data.results.forEach((result, index) => {
-                if (result.content) {
+                if (result.content || result.highlighted_content) {
                     const contentDiv = document.getElementById(`content-${index}`);
                     if (contentDiv) {
-                        contentDiv.innerHTML = result.content;
+                        // Use highlighted content if available, otherwise use plain content
+                        contentDiv.innerHTML = result.highlighted_content || result.content;
                     }
                 }
             });

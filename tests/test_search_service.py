@@ -52,14 +52,28 @@ class TestSearchService:
 
     def test_build_query_with_highlights(self, search_service):
         """Test query includes highlighting configuration."""
-        request = SearchRequest(query="test", include_highlights=True)
+        request = SearchRequest(query="test", include_highlights=True, include_content=True)
 
         query = search_service._build_query(request)
 
         assert "highlight" in query
         assert "content" in query["highlight"]["fields"]
         assert "summary" in query["highlight"]["fields"]
+        # When include_content=True, content uses full-field highlighting (no fragments)
+        assert query["highlight"]["fields"]["content"]["number_of_fragments"] == 0
+        assert query["highlight"]["fields"]["summary"]["fragment_size"] == 150
+
+    def test_build_query_with_snippet_highlights(self, search_service):
+        """Test query uses fragment highlighting when content not included."""
+        request = SearchRequest(query="test", include_highlights=True, include_content=False)
+
+        query = search_service._build_query(request)
+
+        assert "highlight" in query
+        assert "content" in query["highlight"]["fields"]
+        # When include_content=False, content uses fragment highlighting for snippets
         assert query["highlight"]["fields"]["content"]["fragment_size"] == 150
+        assert query["highlight"]["fields"]["content"]["number_of_fragments"] == 1
 
     def test_build_query_without_fuzzy(self, search_service):
         """Test query without fuzzy matching."""

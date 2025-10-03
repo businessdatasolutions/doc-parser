@@ -105,6 +105,10 @@ class SearchResult(BaseModel):
         default=None,
         description="Full page content with preserved structure (tables, formatting)"
     )
+    highlighted_content: Optional[str] = Field(
+        default=None,
+        description="Full page content with search terms highlighted using <mark> tags"
+    )
     summary: Optional[str] = Field(
         default=None,
         description="AI-generated summary of the page"
