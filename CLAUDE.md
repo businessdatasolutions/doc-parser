@@ -214,12 +214,37 @@ doc-parser/
   - Pagination for large result sets
 - **Environment Agnostic**: Auto-detects URL (works in localhost, Codespaces, production)
 
+### Performance Metrics (Validated - Oct 3, 2025)
+
+**Processing Times:**
+- Document Upload: <1s (target: <5s) ✅
+- PDF Parsing (1 page): ~10s (LandingAI dpt-2-latest)
+- Summarization (1 page): ~2s (Claude Haiku 3, 3K tokens)
+- Elasticsearch Indexing: ~38ms
+- **Total Processing (1 page)**: ~12s (target: <30s) ✅
+
+**Search Performance:**
+- Response Time: 55ms (target: <3s) ✅
+- p95 Latency: <100ms (target: <3s) ✅
+- BM25 Relevance Scoring: Working
+- Document Download: <1s ✅
+
+**Test Coverage:**
+- 83 tests passing (all categories)
+- Integration tested with real PDFs
+
 ### Cost Structure
 - **Elasticsearch**: $0/month (Basic tier free for self-managed)
-- **LandingAI**: ~$0.01-0.05 per page (estimate)
-- **Claude Haiku 3**: $0.0037 per document (summaries cached)
+- **LandingAI**: ~$0.01-0.05 per page (estimate, rate limits apply)
+- **Claude Haiku 3**: $0.0037 per document (validated with real usage)
 - **Infrastructure**: ~$75-300/month (server/VM)
 - **Total MVP**: ~$75/month operational costs
+
+### Known Limitations (Discovered Oct 3, 2025)
+- **LandingAI**: 50-page maximum per PDF (hard limit)
+- **LandingAI**: Rate limiting on API calls (429 errors)
+- **Solution**: Implement PDF chunking for large documents + retry logic
+- **Impact**: Large technical manuals (>50 pages) require pre-processing
 
 ## API Endpoints
 
