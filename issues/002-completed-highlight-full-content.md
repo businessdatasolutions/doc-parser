@@ -1,13 +1,18 @@
 # Issue #002: Add Highlights to Search Terms in Full Text
 
-**Status**: Open
+**Status**: Completed
 **Priority**: High
 **Created**: 2025-10-03
-**Assigned**: Unassigned
+**Completed**: 2025-10-03
+**Assigned**: Claude
 
 ## Description
 
 When users expand "Show Full Content" in search results, the search terms should be highlighted within the full text content, not just in the snippet.
+
+## Implementation Summary
+
+Implemented server-side Elasticsearch full-field highlighting. When `include_content=true` and `include_highlights=true`, Elasticsearch returns the entire content field with `<mark>` tags around matched terms. The frontend uses this highlighted content when available.
 
 ## Problem
 
@@ -77,12 +82,12 @@ if (firstMark) {
 
 ## Acceptance Criteria
 
-- [ ] Search terms are highlighted in full content view
-- [ ] Highlighting uses same visual style as snippets (`<mark>` tag with yellow background)
-- [ ] Multiple occurrences of search terms are all highlighted
-- [ ] Highlighting handles multi-word queries correctly
-- [ ] User can navigate between highlighted terms (optional: next/previous buttons)
-- [ ] Performance remains acceptable for large documents
+- [x] Search terms are highlighted in full content view
+- [x] Highlighting uses same visual style as snippets (`<mark>` tag with yellow background)
+- [x] Multiple occurrences of search terms are all highlighted
+- [x] Highlighting handles multi-word queries correctly
+- [ ] User can navigate between highlighted terms (optional: next/previous buttons) - Not implemented
+- [x] Performance remains acceptable for large documents
 
 ## Performance Considerations
 
