@@ -106,12 +106,35 @@ async def root():
     }
 
 
+@app.get("/pitch.html", tags=["Root"])
+async def pitch():
+    """
+    Serve the pitch presentation HTML page.
+
+    Returns:
+        FileResponse: Pitch presentation with personalization support
+    """
+    static_dir = Path(__file__).parent.parent / "static"
+    pitch_path = static_dir / "pitch.html"
+
+    if pitch_path.exists():
+        return FileResponse(pitch_path)
+
+    return {"error": "Pitch page not found"}
+
+
+# Mount static files directory
+static_dir = Path(__file__).parent.parent / "static"
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
 # API v1 routers
 from src.api.search import router as search_router
 from src.api.documents import router as documents_router
+from src.api.feedback import router as feedback_router
 
 app.include_router(search_router)
 app.include_router(documents_router)
+app.include_router(feedback_router)
 
 
 if __name__ == "__main__":

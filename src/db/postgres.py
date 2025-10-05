@@ -12,7 +12,9 @@ from sqlalchemy import (
     DateTime,
     Enum as SQLEnum,
     Text,
-    BigInteger
+    BigInteger,
+    ForeignKey,
+    Index
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -65,6 +67,41 @@ class Document(Base):
             "error_message": self.error_message,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class Feedback(Base):
+    """User feedback model for search results."""
+
+    __tablename__ = "search_feedback"
+
+    id = Column(String(36), primary_key=True)
+    query = Column(Text, nullable=False)
+    document_id = Column(String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    page = Column(Integer, nullable=False)
+    rating = Column(String(10), nullable=False)  # 'positive' or 'negative'
+    session_id = Column(String(36), nullable=True)  # Optional anonymous session tracking
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    # Indexes for faster queries
+    __table_args__ = (
+        Index('idx_feedback_document_page', 'document_id', 'page'),
+        Index('idx_feedback_query', 'query'),
+        Index('idx_feedback_timestamp', 'timestamp'),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert model to dictionary."""
+        return {
+            "feedback_id": self.id,
+            "query": self.query,
+            "document_id": self.document_id,
+            "page": self.page,
+            "rating": self.rating,
+            "session_id": self.session_id,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
@@ -327,6 +364,106 @@ class PostgreSQLClient:
 
             count = query.count()
             return count
+
+        finally:
+            session.close()
+
+    def create_feedback(
+        self,
+        feedback_id: str,
+        query: str,
+        document_id: str,
+        page: int,
+        rating: str,
+        session_id: Optional[str] = None
+    ) -> Feedback:
+        """
+        Create a new feedback record.
+
+        Args:
+            feedback_id: Unique feedback identifier
+            query: Search query that generated the result
+            document_id: Document that was rated
+            page: Page number that was rated
+            rating: Rating value ('positive' or 'negative')
+            session_id: Optional session identifier for anonymous tracking
+
+        Returns:
+            Feedback: Created feedback record
+        """
+        session = self.get_session()
+        try:
+            feedback = Feedback(
+                id=feedback_id,
+                query=query,
+                document_id=document_id,
+                page=page,
+                rating=rating,
+                session_id=session_id
+            )
+
+            session.add(feedback)
+            session.commit()
+            session.refresh(feedback)
+
+            logger.info(f"Created feedback record: {feedback_id} ({rating} for {document_id} page {page})")
+            return feedback
+
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to create feedback record: {e}")
+            raise
+        finally:
+            session.close()
+
+    def get_feedback_stats(self, document_id: str, page: int) -> Dict[str, int]:
+        """
+        Get feedback statistics for a document page.
+
+        Args:
+            document_id: Document identifier
+            page: Page number
+
+        Returns:
+            dict: Dictionary with 'positive_count' and 'negative_count'
+        """
+        session = self.get_session()
+        try:
+            feedbacks = session.query(Feedback).filter(
+                Feedback.document_id == document_id,
+                Feedback.page == page
+            ).all()
+
+            positive_count = sum(1 for f in feedbacks if f.rating == 'positive')
+            negative_count = sum(1 for f in feedbacks if f.rating == 'negative')
+
+            return {
+                "positive_count": positive_count,
+                "negative_count": negative_count,
+                "total_count": len(feedbacks)
+            }
+
+        finally:
+            session.close()
+
+    def get_query_feedback_history(self, query: str, limit: int = 100) -> List[Feedback]:
+        """
+        Get recent feedback for a specific query.
+
+        Args:
+            query: Search query text
+            limit: Maximum number of results
+
+        Returns:
+            list: List of feedback records
+        """
+        session = self.get_session()
+        try:
+            feedbacks = session.query(Feedback).filter(
+                Feedback.query == query
+            ).order_by(Feedback.timestamp.desc()).limit(limit).all()
+
+            return feedbacks
 
         finally:
             session.close()

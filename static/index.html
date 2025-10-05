@@ -398,6 +398,66 @@
             font-weight: 600;
             padding: 0 10px;
         }
+
+        /* Feedback buttons */
+        .feedback-buttons {
+            display: inline-flex;
+            gap: 8px;
+            margin-left: 15px;
+            align-items: center;
+        }
+
+        .feedback-btn {
+            background: none;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .feedback-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+            border-color: #667eea;
+        }
+
+        .feedback-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .feedback-btn.voted {
+            background: #667eea;
+            border-color: #667eea;
+        }
+
+        .feedback-btn.thumb-up:hover:not(:disabled) {
+            border-color: #4caf50;
+        }
+
+        .feedback-btn.thumb-up.voted {
+            background: #4caf50;
+            border-color: #4caf50;
+        }
+
+        .feedback-btn.thumb-down:hover:not(:disabled) {
+            border-color: #f44336;
+        }
+
+        .feedback-btn.thumb-down.voted {
+            background: #f44336;
+            border-color: #f44336;
+        }
+
+        .feedback-message {
+            font-size: 11px;
+            color: #666;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -459,8 +519,32 @@
     <script>
         // Auto-detect API URL based on current location (works in Codespaces, localhost, etc.)
         const API_URL = window.location.origin + '/api/v1/search';
+        const FEEDBACK_API_URL = window.location.origin + '/api/v1/feedback';
         let currentPage = 1;
         let lastQuery = null;
+        let currentQuery = '';
+
+        // Generate or retrieve session ID for anonymous feedback tracking
+        function getSessionId() {
+            let sessionId = sessionStorage.getItem('doc_search_session_id');
+            if (!sessionId) {
+                sessionId = 'session_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                sessionStorage.setItem('doc_search_session_id', sessionId);
+            }
+            return sessionId;
+        }
+
+        // Check if user has already voted on this result
+        function hasVoted(documentId, page) {
+            const voteKey = `vote_${documentId}_${page}`;
+            return sessionStorage.getItem(voteKey);
+        }
+
+        // Mark result as voted
+        function markAsVoted(documentId, page, rating) {
+            const voteKey = `vote_${documentId}_${page}`;
+            sessionStorage.setItem(voteKey, rating);
+        }
 
         // DOM elements
         const searchInput = document.getElementById('searchInput');
@@ -487,6 +571,9 @@
                 showError('Please enter a search query');
                 return;
             }
+
+            // Store current query for feedback submission
+            currentQuery = query;
 
             currentPage = page;
             lastQuery = query;
@@ -573,11 +660,36 @@
 
             data.results.forEach((result, index) => {
                 const contentId = `content-${index}`;
+                const vote = hasVoted(result.document_id, result.page);
+                const thumbUpVoted = vote === 'positive' ? 'voted' : '';
+                const thumbDownVoted = vote === 'negative' ? 'voted' : '';
+                const buttonsDisabled = vote ? 'disabled' : '';
+
                 html += `
                     <div class="result-card">
                         <div class="result-header">
                             <div class="result-title">${escapeHtml(result.filename)} - Page ${result.page}</div>
-                            <div class="result-score">Score: ${result.score.toFixed(2)}</div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="result-score">Score: ${result.score.toFixed(2)}</div>
+                                <div class="feedback-buttons">
+                                    <button
+                                        class="feedback-btn thumb-up ${thumbUpVoted}"
+                                        id="thumb-up-${index}"
+                                        onclick="submitFeedback('${escapeHtml(currentQuery)}', '${result.document_id}', ${result.page}, 'positive', ${index})"
+                                        title="Helpful result"
+                                        ${buttonsDisabled}>
+                                        👍
+                                    </button>
+                                    <button
+                                        class="feedback-btn thumb-down ${thumbDownVoted}"
+                                        id="thumb-down-${index}"
+                                        onclick="submitFeedback('${escapeHtml(currentQuery)}', '${result.document_id}', ${result.page}, 'negative', ${index})"
+                                        title="Not helpful"
+                                        ${buttonsDisabled}>
+                                        👎
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div class="result-meta">
                             <div class="meta-item">
@@ -669,6 +781,66 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        async function submitFeedback(query, documentId, page, rating, resultIndex) {
+            // Check if already voted
+            const existingVote = hasVoted(documentId, page);
+            if (existingVote) {
+                console.log('Already voted on this result');
+                return;
+            }
+
+            // Get buttons
+            const thumbUpBtn = document.getElementById(`thumb-up-${resultIndex}`);
+            const thumbDownBtn = document.getElementById(`thumb-down-${resultIndex}`);
+
+            // Disable buttons during submission
+            thumbUpBtn.disabled = true;
+            thumbDownBtn.disabled = true;
+
+            try {
+                const response = await fetch(FEEDBACK_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        document_id: documentId,
+                        page: page,
+                        rating: rating,
+                        session_id: getSessionId()
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Feedback submission failed: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('Feedback submitted successfully:', data);
+
+                // Mark as voted
+                markAsVoted(documentId, page, rating);
+
+                // Update button appearance
+                if (rating === 'positive') {
+                    thumbUpBtn.classList.add('voted');
+                } else {
+                    thumbDownBtn.classList.add('voted');
+                }
+
+                // Keep buttons disabled to prevent re-voting
+                // (buttons remain disabled)
+
+            } catch (error) {
+                console.error('Failed to submit feedback:', error);
+                // Re-enable buttons on error
+                thumbUpBtn.disabled = false;
+                thumbDownBtn.disabled = false;
+                showError('Failed to submit feedback. Please try again.');
+            }
         }
 
         function toggleContent(contentId) {

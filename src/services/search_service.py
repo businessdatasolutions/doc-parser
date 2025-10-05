@@ -4,12 +4,74 @@ Search service for querying documents in Elasticsearch.
 
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from time import time
 
 from src.db.elasticsearch import get_elasticsearch_client
+from src.db.postgres import get_postgres_client
 from src.models.search import SearchRequest, SearchResponse, SearchResult, SearchFilters
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+class FeedbackCache:
+    """Simple in-memory cache for feedback boost scores with TTL."""
+
+    def __init__(self, ttl_seconds: int = 300):
+        """
+        Initialize feedback cache.
+
+        Args:
+            ttl_seconds: Time-to-live for cache entries (default 5 minutes)
+        """
+        self.cache: Dict[str, tuple[float, float]] = {}  # key -> (boost_score, expiry_time)
+        self.ttl_seconds = ttl_seconds
+
+    def get(self, document_id: str, page: int) -> Optional[float]:
+        """
+        Get boost score from cache if not expired.
+
+        Args:
+            document_id: Document identifier
+            page: Page number
+
+        Returns:
+            float: Boost score or None if not cached or expired
+        """
+        key = f"{document_id}:{page}"
+        if key in self.cache:
+            boost_score, expiry_time = self.cache[key]
+            if time() < expiry_time:
+                return boost_score
+            else:
+                # Expired, remove from cache
+                del self.cache[key]
+        return None
+
+    def set(self, document_id: str, page: int, boost_score: float) -> None:
+        """
+        Store boost score in cache with TTL.
+
+        Args:
+            document_id: Document identifier
+            page: Page number
+            boost_score: Boost multiplier to cache
+        """
+        key = f"{document_id}:{page}"
+        expiry_time = time() + self.ttl_seconds
+        self.cache[key] = (boost_score, expiry_time)
+
+    def invalidate(self, document_id: str, page: int) -> None:
+        """
+        Invalidate cache entry for a specific document page.
+
+        Args:
+            document_id: Document identifier
+            page: Page number
+        """
+        key = f"{document_id}:{page}"
+        if key in self.cache:
+            del self.cache[key]
 
 
 class SearchService:
@@ -18,7 +80,9 @@ class SearchService:
     def __init__(self):
         """Initialize search service with Elasticsearch client."""
         self.es_client = get_elasticsearch_client()
+        self.pg_client = get_postgres_client()
         self.index_name = "documents"
+        self.feedback_cache = FeedbackCache(ttl_seconds=300)  # 5-minute cache
 
     def search(self, request: SearchRequest) -> SearchResponse:
         """
@@ -204,6 +268,57 @@ class SearchService:
 
         return filter_clauses
 
+    def get_feedback_boost(self, document_id: str, page: int) -> float:
+        """
+        Get feedback boost score for a document page.
+
+        Args:
+            document_id: Document identifier
+            page: Page number
+
+        Returns:
+            float: Boost multiplier (1.0 = neutral, >1.0 = boost, <1.0 = penalty)
+        """
+        # Check cache first
+        cached_boost = self.feedback_cache.get(document_id, page)
+        if cached_boost is not None:
+            return cached_boost
+
+        # Fetch from database
+        try:
+            stats = self.pg_client.get_feedback_stats(document_id, page)
+            positive_count = stats["positive_count"]
+            negative_count = stats["negative_count"]
+
+            # Calculate boost: 1.0 + (net_votes * 0.1)
+            # Each net positive vote adds 10% boost
+            # Each net negative vote subtracts 10% boost
+            net_votes = positive_count - negative_count
+            boost = 1.0 + (net_votes * 0.1)
+
+            # Clamp to reasonable range (0.1 to 3.0)
+            boost = max(0.1, min(3.0, boost))
+
+            # Cache the result
+            self.feedback_cache.set(document_id, page, boost)
+
+            return boost
+
+        except Exception as e:
+            logger.warning(f"Failed to get feedback boost for {document_id}:{page}: {e}")
+            return 1.0  # Neutral boost on error
+
+    def invalidate_feedback_cache(self, document_id: str, page: int) -> None:
+        """
+        Invalidate feedback cache for a document page.
+        Call this when new feedback is submitted.
+
+        Args:
+            document_id: Document identifier
+            page: Page number
+        """
+        self.feedback_cache.invalidate(document_id, page)
+
     def _parse_response(
         self,
         es_response: Dict[str, Any],
@@ -215,6 +330,7 @@ class SearchService:
     ) -> SearchResponse:
         """
         Parse Elasticsearch response into SearchResponse model.
+        Applies feedback boosting to scores and re-sorts results.
 
         Args:
             es_response: Raw Elasticsearch response
@@ -233,7 +349,20 @@ class SearchService:
         results = []
         for hit in es_response["hits"]["hits"]:
             source = hit["_source"]
-            score = hit["_score"]
+            base_score = hit["_score"]
+
+            # Apply feedback boosting to score
+            document_id = source["document_id"]
+            page_num = source["page"]
+            feedback_boost = self.get_feedback_boost(document_id, page_num)
+            boosted_score = base_score * feedback_boost
+
+            # Log if boost is significant
+            if feedback_boost != 1.0:
+                logger.debug(
+                    f"Feedback boost applied: {document_id}:{page_num} "
+                    f"base={base_score:.2f} boost={feedback_boost:.2f} final={boosted_score:.2f}"
+                )
 
             # Extract highlight snippet and full highlighted content
             snippet = None
@@ -252,13 +381,13 @@ class SearchService:
                     # Content fragment (when include_content=False) - use for snippet
                     snippet = hit["highlight"]["content"][0]
 
-            # Create search result
+            # Create search result with boosted score
             result = SearchResult(
                 document_id=source["document_id"],
                 filename=source["filename"],
                 page=source["page"],
                 category=source["category"],
-                score=score,
+                score=boosted_score,  # Use boosted score
                 snippet=snippet,
                 content=source.get("content") if include_content else None,
                 highlighted_content=highlighted_content,
@@ -268,6 +397,9 @@ class SearchService:
                 upload_date=source.get("upload_date")
             )
             results.append(result)
+
+        # Re-sort results by boosted score (descending)
+        results.sort(key=lambda r: r.score, reverse=True)
 
         return SearchResponse(
             query=query,

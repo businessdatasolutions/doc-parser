@@ -39,11 +39,13 @@ This is a **Document Search & Retrieval System** for an internal sales departmen
 - Elasticsearch indexing and search working
 - HTML search UI available at root URL (`/`)
 - Full content display with preserved table structures
+- **User feedback system** with thumbs up/down rating (Issue #001 ✅)
+- **Feedback-based search ranking** with score boosting
 - API key authentication implemented
 - Large PDF handling with automatic 50-page limiting
 - Comprehensive deployment scripts and documentation
 
-**Production Ready**: MVP complete and ready for deployment
+**Production Ready**: MVP complete with learning capabilities
 
 ## Setup
 
@@ -144,9 +146,13 @@ When creating a new issue, follow these guidelines:
 
 6. **Location**: All issues are stored in `issues/` directory
 
+#### Completed Issues
+- [#001](issues/001-completed-user-scoring-learning.md): ✅ User scoring and learning system (Completed: Oct 4, 2025)
+- [#002](issues/002-completed-highlight-full-content.md): ✅ Highlight search terms in full content (Completed: Oct 3, 2025)
+
 #### Current Open Issues
-- [#001](issues/001-open-user-scoring-learning.md): User scoring and learning system (Priority: Medium)
-- [#002](issues/002-open-highlight-full-content.md): Highlight search terms in full content (Priority: High)
+- [#003](issues/003-open-ui-model-filter.md): Add general client-side filter mechanism to search UI (Priority: Medium)
+- [#004](issues/004-open-learning-to-rank.md): Implement Learning to Rank (LTR) architecture (Priority: Low - Future Enhancement)
 
 ### Running the Application
 ```bash
@@ -329,6 +335,27 @@ doc-parser/
   - Returns: 204 No Content
 - `GET /api/v1/documents/{id}/download` - Download original PDF (requires API key)
   - Returns: PDF file with proper content-disposition header
+
+### Feedback System (✅ Implemented - Issue #001)
+- `POST /api/v1/feedback` - Submit user feedback for search results (no authentication required)
+  - Body: `{query, document_id, page, rating, session_id?}`
+  - Rating: `positive` or `negative` (thumbs up/down)
+  - Session ID: Optional anonymous session tracking
+  - Returns: Feedback confirmation with feedback_id
+  - **Effect**: Invalidates cache and affects future search rankings
+- `GET /api/v1/feedback/stats/{document_id}/{page}` - Get feedback statistics (admin endpoint)
+  - Returns: `{positive_count, negative_count, total_count, boost_score}`
+  - Boost score: 1.0 = neutral, >1.0 = boost, <1.0 = penalty
+  - Formula: `boost = 1.0 + (positive_count - negative_count) * 0.1`
+
+**Feedback Features**:
+- ✅ Thumbs up/down UI buttons on each search result
+- ✅ Anonymous voting with session tracking (sessionStorage)
+- ✅ One vote per result per session (prevents duplicate votes)
+- ✅ Real-time score boosting (10% per net positive vote)
+- ✅ 5-minute cache with automatic invalidation
+- ✅ PostgreSQL storage with indexed queries
+- ✅ Affects search ranking immediately after submission
 
 ---
 
