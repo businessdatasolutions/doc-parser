@@ -146,6 +146,7 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
 The application will be available at:
 - **Search UI**: http://localhost:8000/
+- **Pitch Presentation**: http://localhost:8000/pitch.html
 - **API Documentation**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
 
@@ -469,7 +470,13 @@ doc-parser/
 │   └── test_e2e_user_flow.py
 │
 ├── static/                # Frontend assets
-│   └── index.html         # Search UI
+│   ├── index.html         # Search UI
+│   ├── pitch.html         # Pitch presentation with personalization
+│   └── demo.webm          # Demo video recording
+│
+├── scripts/               # Utility scripts
+│   ├── add_feedback_table.py
+│   └── record_demo.py     # Playwright demo video recording
 │
 └── data/                  # Runtime data
     └── pdfs/              # Uploaded PDF storage
@@ -585,6 +592,94 @@ For complete API documentation with request/response schemas, visit:
 - **Interactive Docs**: http://localhost:8000/docs (Swagger UI)
 - **ReDoc**: http://localhost:8000/redoc
 - **API Reference**: [docs/API.md](docs/API.md)
+
+## Sales Enablement
+
+### Pitch Presentation
+
+The system includes a professional pitch presentation page demonstrating ROI and business value.
+
+**Access**: http://localhost:8000/pitch.html
+
+**Features**:
+- **Demo Video**: Automated screen recording showing real searches
+- **ROI Calculations**: Conservative estimates showing minimum 150x ROI
+- **Business Metrics**: 90%+ time savings, <3min search time, 50ms response
+- **Personalization**: URL parameters customize content for specific companies
+
+#### Personalizing the Pitch
+
+Add `?company=COMPANYNAME` to customize the presentation:
+
+```
+http://localhost:8000/pitch.html?company=MPAC
+http://localhost:8000/pitch.html?company=NESTLE
+```
+
+**What Gets Personalized**:
+- Page title
+- Industry-specific problem statements
+- Common search scenarios (use cases)
+- Solution benefits
+- Call-to-action messaging
+
+**Adding New Companies**:
+
+Edit `/static/pitch.html` and add to the `companyConfig` object:
+
+```javascript
+'YOURCOMPANY': {
+    name: 'Your Company Name',
+    industry: 'your industry',
+    useCases: [
+        'Common search scenario 1',
+        'Common search scenario 2',
+        'Common search scenario 3',
+        'Common search scenario 4'
+    ],
+    challenge: 'specific problem this company faces...',
+    benefit: 'how the solution helps this company...',
+    ctaHeading: 'Ready to Transform Your Company\'s Documentation?',
+    ctaSubheading: 'Compelling subheading'
+}
+```
+
+See [docs/pitch-personalization-guide.md](docs/pitch-personalization-guide.md) for detailed instructions.
+
+#### Recording New Demo Videos
+
+Use the Playwright script to create updated demo videos:
+
+```bash
+# Install Playwright browsers (one-time setup)
+playwright install chromium
+
+# Record new demo (requires app running on port 8000)
+python scripts/record_demo.py
+```
+
+The script generates `static/demo.webm` showing:
+1. Search example 1 with results and full content view
+2. Search example 2 with different query
+
+Edit `scripts/record_demo.py` to customize search queries and interactions.
+
+#### ROI Calculations
+
+**Current Metrics** (configurable in pitch.html):
+- **Team Size**: 5 agents
+- **Searches per Day**: 5 per agent
+- **Time Saved per Search**: 27 minutes minimum (30min → <3min)
+- **Daily Team Productivity**: 11.25 hours recovered minimum
+- **Monthly Labor Savings**: €11,250 (assuming €50/hour)
+- **Infrastructure Cost**: €75/month
+- **Minimum ROI**: 150x in first month
+
+**Business Impact**:
+- Faster customer responses
+- Better knowledge democratization
+- Accelerated new hire onboarding
+- Improved service quality
 
 ## Contributing
 

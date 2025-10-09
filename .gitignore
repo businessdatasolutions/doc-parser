@@ -53,9 +53,10 @@ coverage.xml
 logs/
 
 # Data directories
-data/
+data/pdfs/
+
+# PDF files - may contain sensitive business data
 *.pdf
-markdown-doc.md
 
 # Jupyter
 .ipynb_checkpoints/
@@ -65,3 +66,14 @@ playground.ipynb
 tmp/
 temp/
 *.tmp
+
+# Playwright/Browser automation
+.playwright-mcp/
+
+# Screenshots (temporary demo files)
+screenshots/
+*.png
+!static/favicon.ico
+
+# Background/research materials (keep in repo but optional)
+# background-material/

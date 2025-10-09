@@ -41,11 +41,13 @@ This is a **Document Search & Retrieval System** for an internal sales departmen
 - Full content display with preserved table structures
 - **User feedback system** with thumbs up/down rating (Issue #001 ✅)
 - **Feedback-based search ranking** with score boosting
+- **Professional pitch page** at `/pitch.html` with demo video and ROI calculations
+- **URL-based personalization** system for customized business cases (see [docs/pitch-personalization-guide.md](docs/pitch-personalization-guide.md))
 - API key authentication implemented
 - Large PDF handling with automatic 50-page limiting
 - Comprehensive deployment scripts and documentation
 
-**Production Ready**: MVP complete with learning capabilities
+**Production Ready**: MVP complete with learning capabilities and sales enablement materials
 
 ## Setup
 
@@ -197,14 +199,22 @@ doc-parser/
 ├── docs/                  # Documentation
 │   ├── context_session.md
 │   ├── technical_design_document.md
+│   ├── pitch-personalization-guide.md
 │   └── API.md
 │
 ├── tasks/                 # Planning documents
 │   ├── prd-document-search-system.md
+│   ├── prd-mcp-server-transformation.md
 │   └── tasks-prd-document-search-system.md
 │
+├── scripts/               # Utility scripts
+│   ├── add_feedback_table.py
+│   └── record_demo.py    # Playwright demo video recording
+│
 ├── static/                # Frontend assets
-│   └── index.html        # Search UI (HTML/CSS/JS)
+│   ├── index.html        # Search UI (HTML/CSS/JS)
+│   ├── pitch.html        # Pitch presentation with personalization
+│   └── demo.webm         # Demo video recording
 │
 ├── src/                   # Application code
 │   ├── __init__.py
@@ -318,6 +328,7 @@ doc-parser/
 ### Health (✅ Implemented)
 - `GET /health` - Health check endpoint
 - `GET /` - Serves search UI (HTML interface)
+- `GET /pitch.html` - Serves pitch presentation page with personalization support
 
 ### Document Management (✅ Implemented)
 - `POST /api/v1/documents/upload` - Upload PDF document with metadata (requires API key)
